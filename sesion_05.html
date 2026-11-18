@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sesión 5 — Fragmentación, ETL e Índices</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Vanilla Tilt 3D -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+
+  <style>
+    :root {
+      --text-main: #2C1810;       /* Dark Roasted Coffee */
+      --accent-main: #C8963E;     /* Warm Amber Gold */
+      --accent-sec: #E5C384;      /* Cream Latte Glow */
+      --accent-vibrant: #A0522D;  /* Rich Cinnamon Roast */
+      --bg-base: #FAF6F0;        
+      --card-bg: rgba(255, 255, 255, 0.68); /* Cristal ultra-transparente para apreciar el video */
+      --card-border: rgba(255, 255, 255, 0.65);
+      --code-bg: #1A100C;
+      --code-text: #FAF6F0;
+      --glass-border: rgba(200, 150, 62, 0.45);
+      --shadow-soft: 0 20px 40px rgba(44, 24, 16, 0.15);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      color: var(--text-main); 
+      line-height: 1.6; 
+      padding: 2rem 1rem;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    /* Contenedor de Video de Fondo Deslumbrante */
+    .video-bg-container { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100vw; 
+      height: 100vh; 
+      z-index: -2; 
+      overflow: hidden; 
+    }
+    .video-bg-container video { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+      filter: contrast(1.1) brightness(1.05) saturate(1.2); 
+      transform: scale(1.02);
+      transition: filter 0.5s ease;
+    }
+    
+    /* Capa Overlay Cristulina Ultra Transparente */
+    .video-overlay { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100vw; 
+      height: 100vh; 
+      z-index: -1; 
+      background: rgba(250, 246, 240, 0.22); /* Transparencia equilibrada para ver el movimiento del café */
+      backdrop-filter: blur(2px);
+      transition: all 0.4s ease;
+    }
+
+    /* Partículas de brillo cálido ambiental */
+    .glow-particle {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: -1;
+      filter: blur(55px);
+      opacity: 0.35;
+      animation: floatGlow 14s infinite alternate ease-in-out;
+    }
+    .glow-1 { top: 10%; left: 15%; width: 320px; height: 320px; background: var(--accent-main); }
+    .glow-2 { bottom: 15%; right: 10%; width: 380px; height: 380px; background: var(--accent-sec); }
+
+    @keyframes floatGlow {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(-45px) scale(1.18); }
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; transition: opacity 0.4s ease, transform 0.4s ease; }
+    
+    /* Header Neomórfico & Glassmorphism */
+    header { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      padding: 2.8rem; 
+      border-radius: var(--radius-lg); 
+      margin-bottom: 2rem; 
+      backdrop-filter: blur(16px); 
+      border-left: 8px solid var(--accent-main); 
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(200, 150, 62, 0.35) 0%, rgba(255,255,255,0) 70%);
+      pointer-events: none;
+    }
+
+    .badge { 
+      background: linear-gradient(135deg, var(--accent-vibrant), var(--accent-main)); 
+      color: #FFF; 
+      padding: 0.4rem 1.2rem; 
+      border-radius: 30px; 
+      font-size: 0.8rem; 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(160, 82, 45, 0.35);
+    }
+
+    h1 { 
+      font-family: 'Space Grotesk', sans-serif; 
+      font-size: 2.6rem; 
+      margin-top: 0.8rem; 
+      color: var(--text-main); 
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+    }
+    
+    /* Barra de Controles Multimedias Flotante */
+    .video-controls {
+      position: fixed;
+      top: 1.2rem;
+      right: 1.2rem;
+      z-index: 1000;
+      display: flex;
+      gap: 1rem;
+      background: rgba(255, 255, 255, 0.88);
+      padding: 0.7rem 1.4rem;
+      border-radius: 40px;
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-soft);
+      align-items: center;
+    }
+
+    .video-controls label { 
+      font-size: 0.82rem; 
+      font-weight: 700; 
+      display: flex; 
+      align-items: center; 
+      gap: 6px; 
+      cursor: pointer;
+    }
+
+    .video-controls input[type="range"] { 
+      accent-color: var(--accent-vibrant); 
+      cursor: pointer; 
+    }
+
+    .theme-select {
+      background: transparent;
+      border: 1px solid rgba(0,0,0,0.15);
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Tarjetas de Métricas en Vivo / KPIs */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 1.4rem 1.6rem;
+      border-radius: var(--radius-md);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      position: relative;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      background-color: #C8963E;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #C8963E;
+      animation: pulse 1.8s infinite;
+      position: absolute;
+      top: 15px;
+      right: 15px;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(200, 150, 62, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(200, 150, 62, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(200, 150, 62, 0); }
+    }
+
+    .kpi-icon { 
+      background: linear-gradient(135deg, var(--accent-main), var(--accent-vibrant)); 
+      color: white; 
+      padding: 0.9rem; 
+      border-radius: 16px; 
+      display: flex; 
+      box-shadow: 0 6px 15px rgba(200, 150, 62, 0.4);
+    }
+
+    .kpi-value { font-family: 'Space Grotesk', sans-serif; font-size: 1.7rem; font-weight: 700; }
+    .kpi-label { font-size: 0.85rem; color: var(--text-main); opacity: 0.85; font-weight: 600; }
+
+    /* Titulares de Sección con Línea Gradiente */
+    .section-title { 
+      font-family: 'Space Grotesk', sans-serif; 
+      font-size: 1.75rem; 
+      margin: 2.5rem 0 1.2rem; 
+      display: flex; 
+      align-items: center; 
+      gap: 0.8rem; 
+      border-bottom: 2px solid var(--glass-border); 
+      padding-bottom: 0.6rem; 
+    }
+
+    .section-title::before { 
+      content: ''; 
+      width: 10px; 
+      height: 28px; 
+      background: linear-gradient(to bottom, var(--accent-main), var(--accent-vibrant)); 
+      border-radius: 6px; 
+    }
+    
+    /* Grid de Contenidos & Efecto 3D Tilt */
+    .content-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    
+    .card { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      padding: 2rem; 
+      border-radius: var(--radius-md); 
+      box-shadow: var(--shadow-soft); 
+      backdrop-filter: blur(16px); 
+      transform-style: preserve-3d;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover { 
+      border-color: var(--accent-main); 
+      box-shadow: 0 15px 35px rgba(200, 150, 62, 0.25);
+    }
+
+    .card h3 { 
+      font-family: 'Space Grotesk', sans-serif; 
+      margin-bottom: 0.9rem; 
+      color: var(--text-main); 
+      border-bottom: 2px dotted var(--accent-main); 
+      padding-bottom: 0.5rem; 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+    }
+    
+    ul { list-style: none; margin-top: 0.8rem; }
+    li { margin-bottom: 0.6rem; padding-left: 1.3rem; position: relative; }
+    li::before { content: "⚡"; color: var(--accent-vibrant); position: absolute; left: 0; font-size: 0.85rem; }
+
+    /* Bloques de Código Interactivos */
+    .code-container { position: relative; margin-top: 1rem; }
+    .btn-copy { 
+      position: absolute; 
+      top: 10px; 
+      right: 10px; 
+      background: rgba(255,255,255,0.2); 
+      color: #fff; 
+      border: 1px solid rgba(255,255,255,0.3); 
+      padding: 5px 12px; 
+      border-radius: 8px; 
+      font-size: 0.75rem; 
+      cursor: pointer; 
+      backdrop-filter: blur(4px);
+      transition: all 0.2s ease; 
+    }
+
+    .btn-copy:hover { background: var(--accent-main); color: var(--text-main); font-weight: bold; }
+
+    pre { 
+      background: var(--code-bg); 
+      color: var(--code-text); 
+      padding: 1.2rem; 
+      border-radius: var(--radius-sm); 
+      font-family: 'Consolas', 'Courier New', monospace; 
+      font-size: 0.85rem; 
+      overflow-x: auto; 
+      border-left: 4px solid var(--accent-main); 
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.6); 
+    }
+
+    /* Placeholders de Capturas con Efectos */
+    .screenshot-placeholder { 
+      background: rgba(239, 230, 221, 0.45); 
+      border: 2px dashed var(--accent-main); 
+      border-radius: var(--radius-sm); 
+      min-height: 180px; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      text-align: center; 
+      padding: 1.5rem; 
+      margin-top: 1rem; 
+      color: var(--text-main); 
+      backdrop-filter: blur(6px);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .screenshot-placeholder:hover { 
+      background: rgba(200, 150, 62, 0.25); 
+      transform: scale(1.02);
+    }
+
+    .screenshot-placeholder strong { display: flex; align-items: center; gap: 8px; margin-bottom: 0.3rem; }
+
+    /* Botón Flotante para Exportación */
+    .btn-print { 
+      position: fixed; 
+      bottom: 2rem; 
+      right: 2rem; 
+      background: linear-gradient(135deg, var(--accent-vibrant), var(--accent-main)); 
+      color: #FFF; 
+      border: none; 
+      padding: 1rem 2rem; 
+      border-radius: 40px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      box-shadow: 0 10px 25px rgba(160, 82, 45, 0.4); 
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-print:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 15px 30px rgba(160, 82, 45, 0.5); }
+
+    @media print { .video-bg-container, .video-overlay, .btn-print, .video-controls, .glow-particle { display: none; } body { background: white; padding: 0; } }
+  </style>
+</head>
+<body>
+
+  <!-- Luces de Neón Flotantes en Segundo Plano -->
+  <div class="glow-particle glow-1"></div>
+  <div class="glow-particle glow-2"></div>
+
+  <!-- Video de Fondo en Alta Definición -->
+  <div class="video-bg-container">
+    <video autoplay loop muted playsinline poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'><rect fill='%23FAF6F0'/></svg>">
+      <source src="video5.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="video-overlay" id="videoOverlay"></div>
+
+  <!-- Panel Multimedia Flotante -->
+  <div class="video-controls">
+    <label><i data-lucide="sliders"></i> Opacidad: 
+      <input type="range" id="opacitySlider" min="0.05" max="0.80" step="0.05" value="0.22" oninput="adjustOverlay(this.value)">
+    </label>
+
+    <label><i data-lucide="palette"></i> Tono:
+      <select class="theme-select" onchange="changeGlassColor(this.value)">
+        <option value="amber">Ámbar Café</option>
+        <option value="cream">Crema Latte</option>
+        <option value="cinnamon">Canela Roast</option>
+        <option value="darkespresso">Espresso Oscuro</option>
+      </select>
+    </label>
+
+    <label style="margin-left: 5px;">
+      <input type="checkbox" id="toggleUI" onchange="toggleUI(this.checked)"> Modo Cine
+    </label>
+  </div>
+
+  <button class="btn-print" onclick="window.print()"><i data-lucide="printer"></i> Exportar Sesión 5 a PDF</button>
+
+  <div class="container" id="mainContainer">
+    <header>
+      <span class="badge"><i data-lucide="layers"></i> Elida Huanca | Sesión 5</span>
+      <h1>Particionamiento de Datos, Pipelines ETL e Índices Avanzados</h1>
+      <p>Optimización del rendimiento mediante fragmentación horizontal por región, carga masiva optimizada y tuning con EXPLAIN ANALYZE.</p>
+    </header>
+
+    <!-- Indicadores KPIs Dinámicos -->
+    <div class="kpi-grid">
+      <div class="kpi-card" data-tilt data-tilt-max="10">
+        <div class="status-dot"></div>
+        <div class="kpi-icon"><i data-lucide="grid"></i></div>
+        <div>
+          <div class="kpi-value">Partition Pruning</div>
+          <div class="kpi-label">Lectura de Disco Optimizada</div>
+        </div>
+      </div>
+
+      <div class="kpi-card" data-tilt data-tilt-max="10">
+        <div class="status-dot" style="background-color: #E5C384; box-shadow: 0 0 10px #E5C384;"></div>
+        <div class="kpi-icon" style="background: linear-gradient(135deg, #E5C384, #C8963E);"><i data-lucide="upload-cloud"></i></div>
+        <div>
+          <div class="kpi-value">+100,000</div>
+          <div class="kpi-label">Registros ETL / Segundos</div>
+        </div>
+      </div>
+
+      <div class="kpi-card" data-tilt data-tilt-max="10">
+        <div class="status-dot"></div>
+        <div class="kpi-icon" style="background: linear-gradient(135deg, #A0522D, #2C1810);"><i data-lucide="cpu"></i></div>
+        <div>
+          <div class="kpi-value">EXPLAIN</div>
+          <div class="kpi-label">Análisis de Plan de Ejecución</div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title"><i data-lucide="cpu"></i> Estrategias de Escalamiento y Rendimiento</h2>
+    <div class="content-grid">
+      <div class="card" data-tilt data-tilt-max="8" data-tilt-speed="400">
+        <h3><i data-lucide="split"></i> Particionamiento Horizontal por LIST/RANGE</h3>
+        <p>Distribuir millones de registros de partidas en particiones físicas independientes según la ubicación geográfica del servidor:</p>
+        <ul>
+          <li><strong>Partition Pruning:</strong> La consulta ignora particiones irrelevantes, reduciendo drásticamente la lectura de disco.</li>
+          <li>Separación por código de región: América (1), Europa (2), Asia (3).</li>
+        </ul>
+      </div>
+
+      <div class="card" data-tilt data-tilt-max="8" data-tilt-speed="400">
+        <h3><i data-lucide="zap"></i> Optimización de Consultas mediante Indexación</h3>
+        <p>Estrategias avanzadas de índices para acelerar el matchmaking y los listados de clasificación:</p>
+        <ul>
+          <li><strong>Índices Compuestos:</strong> <code>(region_id, rango_mmr)</code> para búsquedas de partidas equilibradas.</li>
+          <li><strong>Análisis de Planes de Ejecución:</strong> Medición mediante <code>EXPLAIN ANALYZE</code> reduciendo el costo de ejecución de consultas masivas.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 class="section-title"><i data-lucide="code"></i> Código SQL y Carga ETL de Datos</h2>
+    <div class="content-grid">
+      <div class="card" data-tilt data-tilt-max="6">
+        <h3><i data-lucide="table"></i> Creación de Tabla Particionada</h3>
+        <p>Definición del esquema con particionamiento por lista de regiones:</p>
+        <div class="code-container">
+          <button class="btn-copy" onclick="copyCode(this)">Copiar SQL</button>
+          <pre><code>CREATE TABLE partidas_historial (
+    partida_id BIGINT NOT NULL,
+    region_id INT NOT NULL,
+    jugador_id INT NOT NULL,
+    fecha_partida DATETIME NOT NULL,
+    PRIMARY KEY (partida_id, region_id)
+) ENGINE=InnoDB
+PARTITION BY LIST(region_id) (
+    PARTITION p_america VALUES IN (1),
+    PARTITION p_europa VALUES IN (2),
+    PARTITION p_asia VALUES IN (3)
+);</code></pre>
+        </div>
+      </div>
+
+      <div class="card" data-tilt data-tilt-max="6">
+        <h3><i data-lucide="database"></i> Pipeline ETL de Carga Masiva de Datos</h3>
+        <p>Comando optimizado para la ingesta rápida de logs históricos:</p>
+        <div class="code-container">
+          <button class="btn-copy" onclick="copyCode(this)">Copiar SQL</button>
+          <pre><code>-- Importación acelerada deshabilitando verificaciones temporales
+SET FOREIGN_KEY_CHECKS = 0;
+SET UNIQUE_CHECKS = 0;
+
+LOAD DATA INFILE '/var/lib/mysql-files/partidas_logs.csv'
+INTO TABLE partidas_historial
+FIELDS TERMINATED BY ',' 
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES;
+
+SET FOREIGN_KEY_CHECKS = 1;
+SET UNIQUE_CHECKS = 1;</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title"><i data-lucide="check-circle-2"></i> Evidencias Prácticas y Ejecución en Servidor</h2>
+    <div class="content-grid">
+      <div class="card" data-tilt data-tilt-max="8">
+        <h3>1. Plan de Ejecución (EXPLAIN ANALYZE)</h3>
+        <p>Comparativa visual mostrando la reducción de costo de la consulta tras la creación del índice compuesto.</p>
+        <div class="screenshot-placeholder">
+          <strong><i data-lucide="bar-chart-2"></i> [Captura 5.1: Salida EXPLAIN ANALYZE]</strong>
+          <span>Insertar captura comparativa antes/después con Index Scan vs Table Scan</span>
+        </div>
+      </div>
+
+      <div class="card" data-tilt data-tilt-max="8">
+        <h3>2. Verificación de Partición Seleccionada (Pruning)</h3>
+        <p>Salida de consulta comprobando que el motor solo busca dentro de la partición <code>p_america</code>.</p>
+        <div class="screenshot-placeholder">
+          <strong><i data-lucide="filter"></i> [Captura 5.2: Pruning de Particiones]</strong>
+          <span>Insertar captura de EXPLAIN SELECT mostrando solo la partición evaluada</span>
+        </div>
+      </div>
+
+      <div class="card" data-tilt data-tilt-max="8">
+        <h3>3. Consola de Carga Masiva ETL</h3>
+        <p>Resultado del comando <code>LOAD DATA INFILE</code> procesando más de 100,000 registros en segundos.</p>
+        <div class="screenshot-placeholder">
+          <strong><i data-lucide="terminal"></i> [Captura 5.3: Importación Masiva Completada]</strong>
+          <span>Insertar captura con la salida Query OK, 100000 rows affected</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Inicializar íconos Lucide
+    lucide.createIcons();
+
+    // Inicializar efecto 3D Tilt en tarjetas
+    VanillaTilt.init(document.querySelectorAll("[data-tilt]"), {
+      glare: true,
+      "max-glare": 0.25,
+    });
+
+    // Control de opacidad del video de fondo
+    function adjustOverlay(val) {
+      document.getElementById('videoOverlay').style.background = `rgba(250, 246, 240, ${val})`;
+    }
+
+    // Modo Cine (Ocultar Interfaz para apreciar el video)
+    function toggleUI(hide) {
+      const container = document.getElementById('mainContainer');
+      container.style.opacity = hide ? '0' : '1';
+      container.style.transform = hide ? 'scale(0.96)' : 'scale(1)';
+    }
+
+    // Cambiar paleta de colores ambiental
+    function changeGlassColor(color) {
+      const root = document.documentElement;
+      if(color === 'amber') {
+        root.style.setProperty('--accent-main', '#C8963E');
+        root.style.setProperty('--accent-sec', '#E5C384');
+        root.style.setProperty('--accent-vibrant', '#A0522D');
+        root.style.setProperty('--glass-border', 'rgba(200, 150, 62, 0.45)');
+      } else if(color === 'cream') {
+        root.style.setProperty('--accent-main', '#E5C384');
+        root.style.setProperty('--accent-sec', '#FAF6F0');
+        root.style.setProperty('--accent-vibrant', '#C8963E');
+        root.style.setProperty('--glass-border', 'rgba(229, 195, 132, 0.45)');
+      } else if(color === 'cinnamon') {
+        root.style.setProperty('--accent-main', '#A0522D');
+        root.style.setProperty('--accent-sec', '#C8963E');
+        root.style.setProperty('--accent-vibrant', '#8B0000');
+        root.style.setProperty('--glass-border', 'rgba(160, 82, 45, 0.45)');
+      } else if(color === 'darkespresso') {
+        root.style.setProperty('--accent-main', '#2C1810');
+        root.style.setProperty('--accent-sec', '#1A100C');
+        root.style.setProperty('--accent-vibrant', '#000000');
+        root.style.setProperty('--glass-border', 'rgba(44, 24, 16, 0.45)');
+      }
+    }
+
+    // Copiado interactivo de bloques de código
+    function copyCode(btn) {
+      const code = btn.nextElementSibling.innerText;
+      navigator.clipboard.writeText(code);
+      btn.innerText = "¡Copiado!";
+      setTimeout(() => btn.innerText = "Copiar SQL", 2000);
+    }
+  </script>
+</body>
+</html>

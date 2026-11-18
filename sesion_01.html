@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sesión 1 — Modelo Relacional y Scripting Base</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons para mejor acabado visual -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --text-main: #33261D;       /* Velvet Dark Cocoa */
+      --accent-main: #D8A7B1;     /* Dusty Rose */
+      --accent-sec: #B6C4B6;      /* Sage Bloom */
+      --accent-vibrant: #8A5A44;  /* Terracotta Velvet */
+      --bg-base: #F4EAE6;         /* Petal Cream */
+      --card-bg: rgba(255, 255, 255, 0.78); /* Alta translucidez */
+      --card-border: rgba(255, 255, 255, 0.4);
+      --code-bg: #1E1714;
+      --code-text: #F4EAE6;
+      --glass-border: rgba(216, 167, 177, 0.5);
+      --shadow-soft: 0 15px 35px rgba(50, 35, 25, 0.12);
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --radius-sm: 10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      color: var(--text-main); 
+      line-height: 1.6; 
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+    
+    /* Fondo de Video Optimizado */
+    .video-bg-container { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100vw; 
+      height: 100vh; 
+      z-index: -2; 
+      overflow: hidden; 
+    }
+    .video-bg-container video { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+      filter: contrast(1.05) brightness(0.95); /* Realza la belleza del video */
+    }
+    
+    /* Capa de Difuminado Sutil */
+    .video-overlay { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100vw; 
+      height: 100vh; 
+      z-index: -1; 
+      background: rgba(244, 234, 230, 0.35); /* Capa delgada para visibilidad clara del video */
+      backdrop-filter: blur(3px); /* Minimizado para apreciar detalles */
+      transition: all 0.4s ease;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; transition: opacity 0.4s ease; }
+    
+    /* Encabezado */
+    header { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      padding: 2.5rem; 
+      border-radius: var(--radius-lg); 
+      margin-bottom: 2rem; 
+      backdrop-filter: blur(16px); 
+      border-left: 8px solid var(--accent-main); 
+      box-shadow: var(--shadow-soft); 
+    }
+    .badge { 
+      background: var(--accent-sec); 
+      color: var(--text-main); 
+      padding: 0.4rem 1rem; 
+      border-radius: 20px; 
+      font-size: 0.8rem; 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    h1 { font-family: 'Space Grotesk', sans-serif; font-size: 2.5rem; margin-top: 0.8rem; color: var(--text-main); line-height: 1.2; }
+    
+    /* Controles Flotantes para el Video */
+    .video-controls {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 100;
+      display: flex;
+      gap: 0.8rem;
+      background: var(--card-bg);
+      padding: 0.6rem 1.2rem;
+      border-radius: 30px;
+      backdrop-filter: blur(15px);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-soft);
+      align-items: center;
+    }
+    .video-controls label { font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 5px; cursor: pointer;}
+    .video-controls input[type="range"] { accent-color: var(--accent-vibrant); cursor: pointer; }
+
+    /* Barra de Estadísticas / KPIs */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 2rem;
+    }
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 1.2rem 1.5rem;
+      border-radius: var(--radius-md);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .kpi-icon { background: var(--accent-main); color: white; padding: 0.8rem; border-radius: 50%; display: flex; }
+    .kpi-value { font-family: 'Space Grotesk', sans-serif; font-size: 1.6rem; font-weight: 700; }
+    .kpi-label { font-size: 0.85rem; color: var(--accent-vibrant); font-weight: 600; }
+
+    /* Secciones */
+    .section-title { 
+      font-family: 'Space Grotesk', sans-serif; 
+      font-size: 1.7rem; 
+      margin: 2.5rem 0 1.2rem; 
+      display: flex; 
+      align-items: center; 
+      gap: 0.6rem; 
+      border-bottom: 2px solid var(--glass-border); 
+      padding-bottom: 0.5rem; 
+    }
+    .section-title::before { content: ''; width: 10px; height: 26px; background: var(--accent-main); border-radius: 4px; }
+    
+    /* Grid de Contenidos */
+    .content-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .card { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      padding: 2rem; 
+      border-radius: var(--radius-md); 
+      box-shadow: var(--shadow-soft); 
+      backdrop-filter: blur(14px); 
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(50, 35, 25, 0.18); }
+    .card h3 { font-family: 'Space Grotesk', sans-serif; margin-bottom: 0.8rem; color: var(--text-main); border-bottom: 2px dotted var(--accent-main); padding-bottom: 0.4rem; display: flex; align-items: center; gap: 8px; }
+    
+    ul { list-style: none; margin-top: 0.8rem; }
+    li { margin-bottom: 0.6rem; padding-left: 1.2rem; position: relative; }
+    li::before { content: "•"; color: var(--accent-vibrant); font-weight: bold; position: absolute; left: 0; font-size: 1.2rem; line-height: 1; }
+
+    /* Código con Botón Copiar */
+    .code-container { position: relative; margin-top: 1rem; }
+    .btn-copy { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.15); color: #fff; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: 0.2s; }
+    .btn-copy:hover { background: var(--accent-main); color: var(--text-main); }
+    pre { background: var(--code-bg); color: var(--code-text); padding: 1.2rem; border-radius: var(--radius-sm); font-family: 'Courier New', monospace; font-size: 0.85rem; overflow-x: auto; border-left: 4px solid var(--accent-main); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+
+    /* Placeholders Visuales */
+    .screenshot-placeholder { 
+      background: rgba(232, 211, 216, 0.6); 
+      border: 2px dashed var(--accent-main); 
+      border-radius: var(--radius-sm); 
+      min-height: 180px; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      text-align: center; 
+      padding: 1.5rem; 
+      margin-top: 1rem; 
+      color: var(--text-main); 
+      backdrop-filter: blur(4px);
+      transition: background 0.3s;
+    }
+    .screenshot-placeholder:hover { background: rgba(232, 211, 216, 0.85); }
+    .screenshot-placeholder strong { display: flex; align-items: center; gap: 6px; margin-bottom: 0.3rem; }
+
+    /* Botón Flotante Imprimir */
+    .btn-print { 
+      position: fixed; 
+      bottom: 2rem; 
+      right: 2rem; 
+      background: var(--text-main); 
+      color: var(--bg-base); 
+      border: none; 
+      padding: 0.9rem 1.8rem; 
+      border-radius: 30px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25); 
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 100;
+      transition: transform 0.2s ease;
+    }
+    .btn-print:hover { transform: scale(1.05); }
+
+    @media print { .video-bg-container, .video-overlay, .btn-print, .video-controls { display: none; } body { background: white; padding: 0; } }
+  </style>
+</head>
+<body>
+
+  <!-- Fondo de Video con Reproducción Continua y Fluida -->
+  <div class="video-bg-container">
+    <video autoplay loop muted playsinline poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'><rect fill='%23F4EAE6'/></svg>">
+      <source src="video.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="video-overlay" id="videoOverlay"></div>
+
+  <!-- Panel de Control Visual para Apreciar el Video -->
+  <div class="video-controls">
+    <label><i data-lucide="eye"></i> Opacidad Fondo: 
+      <input type="range" id="opacitySlider" min="0.05" max="0.85" step="0.05" value="0.35" oninput="adjustOverlay(this.value)">
+    </label>
+    <label style="margin-left:10px;"><input type="checkbox" id="toggleUI" onchange="toggleUI(this.checked)"> Ocultar Interfaz</label>
+  </div>
+
+  <button class="btn-print" onclick="window.print()"><i data-lucide="printer"></i> Exportar Sesión 1 a PDF</button>
+
+  <div class="container" id="mainContainer">
+    <header>
+      <span class="badge"><i data-lucide="layers"></i> Elida Huanca | Sesión 1</span>
+      <h1>Diseño del Modelo Relacional y Scripting Base del Juego Online</h1>
+      <p>Modelado lógico/físico, normalización en 3FN, restricciones de integridad referencial y automatización de despliegue.</p>
+    </header>
+
+    <!-- Módulo Agregado: KPIs y Métricas de la Sesión -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon"><i data-lucide="database"></i></div>
+        <div>
+          <div class="kpi-value">3FN</div>
+          <div class="kpi-label">Estructura Normalizada]</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: var(--accent-sec);"><i data-lucide="table"></i></div>
+        <div>
+          <div class="kpi-value">InnoDB</div>
+          <div class="kpi-label">Motor Transaccional</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background: var(--accent-vibrant);"><i data-lucide="shield-check"></i></div>
+        <div>
+          <div class="kpi-value">100%</div>
+          <div class="kpi-label">Integridad Referencial</div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title"><i data-lucide="cpu"></i> Fundamentos Arquitectónicos del Sistema</h2>
+    <div class="content-grid">
+      <div class="card">
+        <h3><i data-lucide="git-merge"></i> Normalización y Tercera Forma Normal (3FN)</h3>
+        <p>Para asegurar el correcto rendimiento en un entorno multijugador con alta frecuencia de lectura y escritura, el esquema fue normalizado hasta 3FN:</p>
+        <ul>
+          <li><strong>1FN:</strong> Eliminación de atributos multivalor (ej. inventarios serializados guardados como texto en la tabla del jugador).</li>
+          <li><strong>2FN:</strong> Eliminación de dependencias parciales; cada atributo no clave depende completamente de la llave primaria.</li>
+          <li><strong>3FN:</strong> Desacople de atributos transitivos, separando estadísticas globales de los perfiles individuales.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><i data-lucide="key"></i> Estrategia de Llaves y Tipado Estricto</h3>
+        <p>Se implementaron identificadores numéricos de alta eficiencia para garantizar búsquedas veloces en memoria RAM[cite: 2]:</p>
+        <ul>
+          <li><code>BIGINT UNSIGNED AUTO_INCREMENT</code> para claves primarias en tablas transaccionales de alto tráfico (<code>partidas</code>, <code>historial_compras</code>).</li>
+          <li><code>CHAR(36) UUID</code> para identificadores de cuenta expuestos a la API externa para evitar la enumeración de usuarios.</li>
+          <li><code>DECIMAL(10,2)</code> para el manejo estricto de la moneda digital en el juego (monedas de oro/gemas).</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 class="section-title"><i data-lucide="code-2"></i> Scripts DDL y Carga Inicial de Datos (DML)</h2>
+    <div class="content-grid">
+      <div class="card">
+        <h3><i data-lucide="file-code"></i> Script DDL Base (Estructura de Tablas)</h3>
+        <p>Declaración de tablas núcleo respetando relaciones de 1:N y N:M mediante tablas intermedias:</p>
+        <div class="code-container">
+          <button class="btn-copy" onclick="copyCode(this)">Copiar</button>
+          <pre><code>CREATE TABLE jugadores (
+    jugador_id INT AUTO_INCREMENT PRIMARY KEY,
+    nickname VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    nivel INT DEFAULT 1,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE inventario (
+    inventario_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    jugador_id INT NOT NULL,
+    item_id INT NOT NULL,
+    cantidad INT DEFAULT 1,
+    FOREIGN KEY (jugador_id) REFERENCES jugadores(jugador_id) ON DELETE CASCADE
+) ENGINE=InnoDB;</code></pre>
+        </div>
+      </div>
+      <div class="card">
+        <h3><i data-lucide="database-zap"></i> Script DML de Poblado Controlado</h3>
+        <p>Secuencia automatizada para la inserción de catálogos y perfiles iniciales de prueba:</p>
+        <div class="code-container">
+          <button class="btn-copy" onclick="copyCode(this)">Copiar</button>
+          <pre><code>-- Carga de catálogo de ítems
+INSERT INTO cat_items (nombre, tipo, rareza, precio_base) VALUES
+('Espada de Dragón', 'Arma', 'Legendario', 1500.00),
+('Poción de Vida', 'Consumible', 'Común', 50.00);
+
+-- Inserción de jugadores de prueba
+INSERT INTO jugadores (nickname, email, nivel) VALUES
+('ShadowSlayer', 'shadow@game.com', 12),
+('Valkyrie99', 'valk@game.com', 45);</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title"><i data-lucide="image"></i> Evidencias Prácticas y Ejecución en Servidor</h2>
+    <div class="content-grid">
+      <div class="card">
+        <h3>1. Diagrama Entidad-Relación (ERD)</h3>
+        <p>Vista completa del modelo relacional físico exportado desde MySQL Workbench / DBeaver.</p>
+        <div class="screenshot-placeholder">
+          <strong><i data-lucide="camera"></i> [Captura 1.1: Diagrama ERD]</strong>
+          <span>Insertar imagen del modelo lógico/físico visualizando las llaves foráneas y cardinalidades</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>2. Creación Exitosa del Esquema DDL</h3>
+        <p>Salida de consola comprobando la ejecución del archivo <code>01_crear_tablas.sql</code> sin errores de sintaxis o de clave.</p>
+        <div class="screenshot-placeholder">
+          <strong><i data-lucide="terminal"></i> [Captura 1.2: Consola MySQL - DDL]</strong>
+          <span>Insertar captura con la salida de los comandos CREATE TABLE y SHOW TABLES</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3>3. Verificación de Inserción y Restricciones</h3>
+        <p>Consulta <code>SELECT</code> mostrando los datos insertados y la respuesta del motor ante violaciones de unicidad.</p>
+        <div class="screenshot-placeholder">
+          <strong><i data-lucide="check-circle-2"></i> [Captura 1.3: Prueba DML y Constraints]</strong>
+          <span>Insertar captura de SELECT * FROM jugadores y el rechazo por nickname duplicado</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Inicialización de Íconos
+    lucide.createIcons();
+
+    // Control dinámico de opacidad del video de fondo
+    function adjustOverlay(val) {
+      document.getElementById('videoOverlay').style.background = `rgba(244, 234, 230, ${val})`;
+    }
+
+    // Ocultar Interfaz para apreciar el video completamente
+    function toggleUI(hide) {
+      document.getElementById('mainContainer').style.opacity = hide ? '0' : '1';
+    }
+
+    // Copiar código al portapapeles
+    function copyCode(btn) {
+      const code = btn.nextElementSibling.innerText;
+      navigator.clipboard.writeText(code);
+      btn.innerText = "¡Copiado!";
+      setTimeout(() => btn.innerText = "Copiar", 2000);
+    }
+  </script>
+</body>
+</html>

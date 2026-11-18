@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sesión 2 — Servidores, Roles y Administración</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons para la Interfaz -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Vanilla Tilt para animación 3D de tarjetas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+
+  <style>
+    :root {
+      --text-main: #1D2A20;       /* Deep Forest Velvet */
+      --accent-main: #C4B5FD;     /* Glow Lavender */
+      --accent-sec: #d780ed;      /* Neon Sage/Emerald */
+      --accent-vibrant: #7209B7;  /* Deep Violet */
+      --bg-base: #F8F9FA;        
+      --card-bg: rgba(255, 255, 255, 0.72); /* Cristal ultratransparente */
+      --card-border: rgba(255, 255, 255, 0.5);
+      --code-bg: #111812;
+      --code-text: #E8F5E9;
+      --glass-border: rgba(196, 181, 253, 0.6);
+      --shadow-soft: 0 20px 40px rgba(20, 35, 25, 0.15);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      color: var(--text-main); 
+      line-height: 1.6; 
+      padding: 2rem 1rem;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    /* Fondo de Video Deslumbrante */
+    .video-bg-container { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100vw; 
+      height: 100vh; 
+      z-index: -2; 
+      overflow: hidden; 
+    }
+    .video-bg-container video { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+      filter: contrast(1.08) brightness(0.98) saturate(1.1); /* Realce cinematográfico */
+      transform: scale(1.02);
+      transition: transform 10s ease-out;
+    }
+    
+    /* Overlay Ultraligero para apreciar el video */
+    .video-overlay { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100vw; 
+      height: 100vh; 
+      z-index: -1; 
+      background: rgba(248, 249, 250, 0.25); /* Transparencia óptima */
+      backdrop-filter: blur(2px);             /* Blur mínimo */
+      transition: all 0.4s ease;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; transition: opacity 0.4s ease, transform 0.4s ease; }
+    
+    /* Encabezado Principal */
+    header { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      padding: 2.8rem; 
+      border-radius: var(--radius-lg); 
+      margin-bottom: 2rem; 
+      backdrop-filter: blur(16px); 
+      border-left: 8px solid var(--accent-main); 
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(196,181,253,0.3) 0%, rgba(255,255,255,0) 70%);
+      pointer-events: none;
+    }
+
+    .badge { 
+      background: linear-gradient(135deg, var(--accent-vibrant), #3A0CA3); 
+      color: #FFF; 
+      padding: 0.4rem 1.1rem; 
+      border-radius: 30px; 
+      font-size: 0.8rem; 
+      font-weight: 800; 
+      text-transform: uppercase; 
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(114, 9, 183, 0.3);
+    }
+
+    h1 { 
+      font-family: 'Space Grotesk', sans-serif; 
+      font-size: 2.6rem; 
+      margin-top: 0.8rem; 
+      color: var(--text-main); 
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+    }
+    
+    /* Controles Flotantes para Ajustes del Video */
+    .video-controls {
+      position: fixed;
+      top: 1.2rem;
+      right: 1.2rem;
+      z-index: 1000;
+      display: flex;
+      gap: 1rem;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 0.7rem 1.4rem;
+      border-radius: 40px;
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-soft);
+      align-items: center;
+    }
+
+    .video-controls label { 
+      font-size: 0.82rem; 
+      font-weight: 700; 
+      display: flex; 
+      align-items: center; 
+      gap: 6px; 
+      cursor: pointer;
+    }
+
+    .video-controls input[type="range"] { 
+      accent-color: var(--accent-vibrant); 
+      cursor: pointer; 
+    }
+
+    .theme-select {
+      background: transparent;
+      border: 1px solid rgba(0,0,0,0.15);
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* KPIs con Luces Neón de Estado */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 1.4rem 1.6rem;
+      border-radius: var(--radius-md);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      position: relative;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      background-color: var(--accent-sec);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-sec);
+      animation: pulse 1.8s infinite;
+      position: absolute;
+      top: 15px;
+      right: 15px;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(128, 237, 153, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(128, 237, 153, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(128, 237, 153, 0); }
+    }
+
+    .kpi-icon { 
+      background: linear-gradient(135deg, var(--accent-main), var(--accent-vibrant)); 
+      color: white; 
+      padding: 0.9rem; 
+      border-radius: 16px; 
+      display: flex; 
+      box-shadow: 0 6px 15px rgba(196, 181, 253, 0.4);
+    }
+
+    .kpi-value { font-family: 'Space Grotesk', sans-serif; font-size: 1.7rem; font-weight: 700; }
+    .kpi-label { font-size: 0.85rem; color: var(--text-main); opacity: 0.8; font-weight: 600; }
+
+    /* Secciones */
+    .section-title { 
+      font-family: 'Space Grotesk', sans-serif; 
+      font-size: 1.75rem; 
+      margin: 2.5rem 0 1.2rem; 
+      display: flex; 
+      align-items: center; 
+      gap: 0.8rem; 
+      border-bottom: 2px solid var(--glass-border); 
+      padding-bottom: 0.6rem; 
+    }
+
+    .section-title::before { 
+      content: ''; 
+      width: 10px; 
+      height: 28px; 
+      background: linear-gradient(to bottom, var(--accent-main), var(--accent-vibrant)); 
+      border-radius: 6px; 
+    }
+    
+    /* Grid de Contenidos & Glassmorphism 3D */
+    .content-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    
+    .card { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      padding: 2rem; 
+      border-radius: var(--radius-md); 
+      box-shadow: var(--shadow-soft); 
+      backdrop-filter: blur(16px); 
+      transform-style: preserve-3d;
+      transition: border-color 0.3s ease;
+    }
+
+    .card:hover { 
+      border-color: var(--accent-main); 
+    }
+
+    .card h3 { 
+      font-family: 'Space Grotesk', sans-serif; 
+      margin-bottom: 0.9rem; 
+      color: var(--text-main); 
+      border-bottom: 2px dotted var(--accent-main); 
+      padding-bottom: 0.5rem; 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+    }
+    
+    ul { list-style: none; margin-top: 0.8rem; }
+    li { margin-bottom: 0.6rem; padding-left: 1.3rem; position: relative; }
+    li::before { content: "✦"; color: var(--accent-vibrant); font-weight: bold; position: absolute; left: 0; font-size: 0.9rem; }
+
+    /* Bloques de Código */
+    .code-container { position: relative; margin-top: 1rem; }
+    .btn-copy { 
+      position: absolute; 
+      top: 10px; 
+      right: 10px; 
+      background: rgba(255,255,255,0.2); 
+      color: #fff; 
+      border: 1px solid rgba(255,255,255,0.3); 
+      padding: 5px 12px; 
+      border-radius: 8px; 
+      font-size: 0.75rem; 
+      cursor: pointer; 
+      backdrop-filter: blur(4px);
+      transition: all 0.2s ease; 
+    }
+
+    .btn-copy:hover { background: var(--accent-sec); color: var(--text-main); font-weight: bold; }
+
+    pre { 
+      background: var(--code-bg); 
+      color: var(--code-text); 
+      padding: 1.2rem; 
+      border-radius: var(--radius-sm); 
+      font-family: 'Consolas', 'Courier New', monospace; 
+      font-size: 0.85rem; 
+      overflow-x: auto; 
+      border-left: 4px solid var(--accent-sec); 
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.6); 
+    }
+
+    /* Evidencias Visuales */
+    .screenshot-placeholder { 
+      background: rgba(226, 232, 240, 0.5); 
+      border: 2px dashed var(--accent-main); 
+      border-radius: var(--radius-sm); 
+      min-height: 180px; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      text-align: center; 
+      padding: 1.5rem; 
+      margin-top: 1rem; 
+      color: var(--text-main); 
+      backdrop-filter: blur(6px);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .screenshot-placeholder:hover { 
+      background: rgba(196, 181, 253, 0.3); 
+      transform: scale(1.02);
+    }
+
+    .screenshot-placeholder strong { display: flex; align-items: center; gap: 8px; margin-bottom: 0.3rem; }
+
+    /* Botón Flotante Imprimir */
+    .btn-print { 
+      position: fixed; 
+      bottom: 2rem; 
+      right: 2rem; 
+      background: var(--text-main); 
+      color: #FFF; 
+      border: none; 
+      padding: 1rem 2rem; 
+      border-radius: 40px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .btn-print:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 15px 30px rgba(0,0,0,0.4); }
+
+    @media print { .video-bg-container, .video-overlay, .btn-print, .video-controls { display: none; } body { background: white; padding: 0; } }
+  </style>
+</head>
+<body>
+
+  <!-- Contenedor del Video de Fondo en Alta Definición -->
+  <div class="video-bg-container">
+    <video autoplay loop muted playsinline poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'><rect fill='%23F8F9FA'/></svg>">
+      <source src="videos.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="video-overlay" id="videoOverlay"></div>
+
+  <!-- Barra de Control Multimedia Avanzada -->
+  <div class="video-controls">
+    <label><i data-lucide="sliders"></i> Opacidad: 
+      <input type="range" id="opacitySlider" min="0.05" max="0.80" step="0.05" value="0.25" oninput="adjustOverlay(this.value)">
+    </label>
+
+    <label><i data-lucide="palette"></i> Tono:
+      <select class="theme-select" onchange="changeGlassColor(this.value)">
+        <option value="lavender">Lavanda</option>
+        <option value="mint">Menta</option>
+
+        <option value="emerald">Esmeralda</option>
+        <option value="dark">Oscuro</option>
+      </select>
+    </label>
+
+    <label style="margin-left: 5px;">
+      <input type="checkbox" id="toggleUI" onchange="toggleUI(this.checked)"> Modo Cine
+    </label>
+  </div>
+
+  <button class="btn-print" onclick="window.print()"><i data-lucide="printer"></i> Exportar Sesión 2 a PDF</button>
+
+  <div class="container" id="mainContainer">
+    <header>
+      <span class="badge"><i data-lucide="server"></i> Elida Huanca | Sesión 2</span>
+      <h1>Arquitectura de Servidores, Roles Técnicos y Control de Accesos</h1>
+      <p>Configuración de alta disponibilidad Master-Replica, aislamiento de roles y seguridad por principio de mínimo privilegio.</p>
+    </header>
+
+    <!-- Indicadores / KPIs con Animación Pulsante -->
+    <div class="kpi-grid">
+      <div class="kpi-card" data-tilt data-tilt-max="10">
+        <div class="status-dot"></div>
+        <div class="kpi-icon"><i data-lucide="hard-drive"></i></div>
+        <div>
+          <div class="kpi-value">Master</div>
+          <div class="kpi-label">Lectura y Escritura (DML)</div>
+        </div>
+      </div>
+
+      <div class="kpi-card" data-tilt data-tilt-max="10">
+        <div class="status-dot" style="background-color: #C4B5FD; box-shadow: 0 0 10px #C4B5FD;"></div>
+        <div class="kpi-icon" style="background: linear-gradient(135deg, #A3B18A, #588157);"><i data-lucide="copy"></i></div>
+        <div>
+          <div class="kpi-value">2 Réplicas</div>
+          <div class="kpi-label">Sincronización Binlog</div>
+        </div>
+      </div>
+
+      <div class="kpi-card" data-tilt data-tilt-max="10">
+        <div class="status-dot"></div>
+        <div class="kpi-icon" style="background: linear-gradient(135deg, #7209B7, #F72585);"><i data-lucide="shield-lock"></i></div>
+        <div>
+          <div class="kpi-value">RBAC</div>
+          <div class="kpi-label">Mínimo Privilegio</div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title"><i data-lucide="network"></i> Topología del Servidor y Despliegue de Réplicas</h2>
+    <div class="content-grid">
+      <div class="card" data-tilt data-tilt-max="8" data-tilt-speed="400">
+        <h3><i data-lucide="cpu"></i> Estrategia de Creador de Transacciones y Lectura</h3>
+        <p>Para tolerar picos de concurrencia de miles de jugadores simultáneos, se desacopló el procesamiento:</p>
+        <ul>
+          <li><strong>Nodo Primario (Master):</strong> Exclusivo para operaciones DML intensivas de escritura (actualización de experiencia, compras en tienda, registros).</li>
+          <li><strong>Nodos Secundarios (Read Replicas):</strong> Destinados exclusivamente a la consulta de tablas de clasificación (*leaderboards*), perfiles e inventarios.</li>
+        </ul>
+      </div>
+
+      <div class="card" data-tilt data-tilt-max="8" data-tilt-speed="400">
+        <h3><i data-lucide="users"></i> Matriz de Permisos y Perfiles Técnicos</h3>
+        <p>Aplicación rigurosa del Modelo RBAC (*Role-Based Access Control*) para el personal técnico:</p>
+        <ul>
+          <li><code>role_dba</code>: Control total sobre objetos, gestión de esquemas, respaldos y usuarios.</li>
+          <li><code>role_soporte_sa</code>: Permisos de monitoreo, lectura de logs y terminación de hilos bloqueados (`KILL PROCESS`).</li>
+          <li><code>role_analista_da</code>: Acceso restringido de solo lectura (`SELECT`) a vistas anonimizadas de partidas para analítica.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 class="section-title"><i data-lucide="terminal"></i> Scripting de Seguridad y Creación de Usuarios</h2>
+    <div class="content-grid">
+      <div class="card" data-tilt data-tilt-max="6">
+        <h3><i data-lucide="user-check"></i> Configuración de Roles y Usuarios Granulares</h3>
+        <p>Comandos SQL utilizados para la asignación restringida de privilegios:</p>
+        <div class="code-container">
+          <button class="btn-copy" onclick="copyCode(this)">Copiar SQL</button>
+          <pre><code>-- Creación de roles
+CREATE ROLE 'role_analista', 'role_backend_service';
+
+-- Asignación de privilegios
+GRANT SELECT ON juego_db.vw_estadisticas TO 'role_analista';
+GRANT SELECT, INSERT, UPDATE ON juego_db.jugadores TO 'role_backend_service';
+
+-- Asignación de rol a usuario de aplicación
+CREATE USER 'app_api'@'10.0.0.%' IDENTIFIED BY 'PasswordSegura#2026';
+GRANT 'role_backend_service' TO 'app_api'@'10.0.0.%';
+SET DEFAULT ROLE 'role_backend_service' TO 'app_api'@'10.0.0.%';</code></pre>
+        </div>
+      </div>
+
+      <div class="card" data-tilt data-tilt-max="6">
+        <h3><i data-lucide="activity"></i> Monitoreo de Estado de Replicación</h3>
+        <p>Verificación de la sincronización asíncrona basada en Binary Logs (`binlog`)</p>
+        <div class="code-container">
+          <button class="btn-copy" onclick="copyCode(this)">Copiar SQL</button>
+          <pre><code>-- Ejecutado en el servidor Primario
+SHOW MASTER STATUS;
+
+-- Ejecutado en el servidor Réplica
+SHOW SLAVE STATUS\G
+-- Verificación clave:
+-- Slave_IO_Running: Yes
+-- Slave_SQL_Running: Yes
+-- Seconds_Behind_Master: 0</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title"><i data-lucide="folder-check"></i> Evidencias Prácticas y Ejecución en Servidor</h2>
+    <div class="content-grid">
+      <div class="card" data-tilt data-tilt-max="8">
+        <h3>1. Verificación de Matriz de Privilegios</h3>
+        <p>Comprobación de privilegios asignados mediante el comando <code>SHOW GRANTS FOR</code></p>
+        <div class="screenshot-placeholder">
+          <strong><i data-lucide="shield"></i> <img src="Aqui_pones_la_captura_amor" alt=""></strong>
+          <span>Insertar captura mostrando la consola con la verificación de permisos por rol</span>
+        </div>
+      </div>
+
+      <div class="card" data-tilt data-tilt-max="8">
+        <h3>2. Denegación de Acceso por Mínimo Privilegio</h3>
+        <p>Intento fallido de modificación (`DROP` / `DELETE`) usando el usuario con rol de Analista.</p>
+        <div class="screenshot-placeholder">
+          <strong><i data-lucide="alert-triangle"></i> <img src="Aqui_pones_la_captura_amor" alt=""></strong>
+          <span>Insertar captura con el mensaje de error "Access denied for user"</span>
+        </div>
+      </div>
+
+      <div class="card" data-tilt data-tilt-max="8">
+        <h3>3. Sincronización de Replicación Activa</h3>
+        <p>Estado de la réplica mostrando la latencia de replicación en cero y proceso activo.</p>
+        <div class="screenshot-placeholder">
+          <strong><i data-lucide="refresh-cw"></i> <img src="Aqui_pones_la_captura_amor" alt=""></strong>
+          <span>Insertar captura de consola con Slave_IO_Running = Yes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Inicializar íconos Lucide
+    lucide.createIcons();
+
+    // Inicializar efecto Tilt 3D
+    VanillaTilt.init(document.querySelectorAll("[data-tilt]"), {
+      glare: true,
+      "max-glare": 0.25,
+    });
+
+    // Control dinámico de opacidad de overlay
+    function adjustOverlay(val) {
+      document.getElementById('videoOverlay').style.background = `rgba(248, 249, 250, ${val})`;
+    }
+
+    // Modo Cine (Ocultar Interfaz)
+    function toggleUI(hide) {
+      const container = document.getElementById('mainContainer');
+      container.style.opacity = hide ? '0' : '1';
+      container.style.transform = hide ? 'scale(0.96)' : 'scale(1)';
+    }
+
+    // Cambiar tonalidad del cristal Glassmorphism
+    function changeGlassColor(color) {
+      const root = document.documentElement;
+      if(color === 'lavender') {
+        root.style.setProperty('--accent-main', '#C4B5FD');
+        root.style.setProperty('--glass-border', 'rgba(196, 181, 253, 0.6)');
+      } else if(color === 'mint') {
+        root.style.setProperty('--accent-main', '#A3B18A');
+        root.style.setProperty('--glass-border', 'rgba(163, 177, 138, 0.6)');
+      } else if(color === 'emerald') {
+        root.style.setProperty('--accent-main', '#80ED99');
+        root.style.setProperty('--glass-border', 'rgba(128, 237, 153, 0.6)');
+      } else if(color === 'dark') {
+        root.style.setProperty('--accent-main', '#3A0CA3');
+        root.style.setProperty('--glass-border', 'rgba(58, 12, 163, 0.6)');
+      }
+    }
+
+    // Copiado rápido de comandos SQL
+    function copyCode(btn) {
+      const code = btn.nextElementSibling.innerText;
+      navigator.clipboard.writeText(code);
+      btn.innerText = "¡Copiado!";
+      setTimeout(() => btn.innerText = "Copiar SQL", 2000);
+    }
+  </script>
+</body>
+</html>
